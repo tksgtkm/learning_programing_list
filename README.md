@@ -1,0 +1,2 @@
+# learning_programing_list
+機械学習などのプログラムのコレクション
