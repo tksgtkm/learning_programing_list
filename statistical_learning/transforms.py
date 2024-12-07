@@ -203,3 +203,52 @@ class BSpline(TransformerMixin, BaseEstimator):
         
         self.internal_knots_ = internal_knots
 
+        self.knots_ = np.sort(np.concatenate(
+            [[self.lower_bound]*order,
+             [self.upper_bound]*order,
+             internal_knots]
+        ))
+
+        if self.knots_[0] < self.lower_bound:
+            raise ValueError('internal_knots should be greater than our equal to lower_bound')
+        if self.knots_[-1] > self.upper_bound:
+            raise ValueError('internal_knots should be less than our equal to upper_bound')
+        
+        self.boundary_knots_ = [self.lower_bound, self.upper_bound]
+
+        self.nbasis_ = len(self.knots_) - (self.degree + 1)
+        self.columns_ = range(self.nbasis_)
+
+        if not self.intercept:
+            self.columns_ = self.columns_[:-1]
+
+        if isinstance(X_orig, (pd.Series, pd.DataFrame)):
+            if isinstance(X_orig, pd.Series):
+                name = X_orig.name
+            else:
+                name = X_orig.columns[0]
+            self.columns_ = ['{0}[{1}]'.format(self, d) for d in self.columns_]
+
+        return self
+    
+    def transform(self, X):
+        check_is_fitted(self)
+
+        X_orig = X
+        X = np.squeeze(np.asarray(X).astype(float).copy())
+        n = X.shape[0]
+        if X.reshape(-1).shape[0] != n:
+            raise ValueError('expecting a single column feature')
+        
+        value = _splevf(X, (self.knots_, self.degree), der=0, ext=self.ext)
+
+        if not self.intercept:
+            value = value[:, 1:]
+        columns_ = self.columns_
+
+        if isinstance(X_orig, (pd.Series, pd.DataFrame)):
+            df = pd.DataFrame(value, columns=columns_)
+            df.index = X_orig.index
+            return df
+        else:
+            return value
