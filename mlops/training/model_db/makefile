@@ -1,4 +1,4 @@
-DOCKER_REPOSITORY := mlops/training
+DOCKER_REPOSITORY := learning_programming_list
 
 ABSOLUTE_PATH := $(shell pwd)
 
@@ -33,10 +33,10 @@ c_build: build_all
 c_up:
 	docker-compose \
 		-f ./$(DOCKER_COMPOSE) \
-		up -d
-	
+		up  -d
+
 .PHONY: c_down
 c_down:
-	docker-compose \
+	doekcr-compose \
 		-f ./$(DOCKER_COMPOSE) \
 		down
