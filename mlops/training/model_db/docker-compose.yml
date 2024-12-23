@@ -1,12 +1,13 @@
+version: "3"
+
 services:
   postgres:
     image: postgres:15.10
-    container_name: postgres
     ports:
       - 5432:5432
     volumes:
       - ./postgres/init:/docker-entrypoint-initdb.d
-    environment:
+    environments:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=model_db
@@ -17,7 +18,7 @@ services:
 
   model_db:
     container_name: model_db
-    image: mlops/training:model_db_0.0.1
+    image: learning_programming_list:model_db_0.0.1
     restart: always
     environment:
       - POSTGRES_SERVER=postgres
@@ -26,7 +27,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=model_db
       - WORKERS=2
-    entrypoint: ["./rn.sh"]
+    entrypoint: ["./run.sh"]
     ports:
       - "8000:8000"
     depends_on:
