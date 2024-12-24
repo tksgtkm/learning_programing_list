@@ -1,6 +1,6 @@
 import os
 
-class DBConfigrations:
+class DBConfigurations:
     postgres_username = os.getenv("POSTGRES_USER")
     postgres_password = os.getenv("POSTGRES_PASSWORD")
     postgres_port = int(os.getenv("POSTGRES_PORT", 5432))

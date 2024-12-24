@@ -31,12 +31,12 @@ c_build: build_all
 
 .PHONY: c_up
 c_up:
-	docker-compose \
+	docker compose \
 		-f ./$(DOCKER_COMPOSE) \
 		up  -d
 
 .PHONY: c_down
 c_down:
-	doekcr-compose \
+	docker compose \
 		-f ./$(DOCKER_COMPOSE) \
 		down

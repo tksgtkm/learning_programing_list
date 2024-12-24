@@ -4,11 +4,10 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from src.configurations import DBConfigrations
+from src.configurations import DBConfigurations
 
 engine = create_engine(
-    DBConfigrations.sql_alchemy_database_url,
-    encoding="utf-8",
+    DBConfigurations.sql_alchemy_database_url,
     pool_recycle=3600,
     echo=False,
 )
