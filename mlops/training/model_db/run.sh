@@ -18,7 +18,7 @@ gunicorn ${APP_NAME} \
     -b ${HOST}:${PORT} \
     -w ${WORKERS} \
     -k ${UVICORN_WORKER} \
-    -backlog ${BACKLOG} \
+    --backlog ${BACKLOG} \
     --max-requests ${LIMIT_MAX_REQUESTS} \
     --max-requests-jitter ${MAX_REQUESTS_JITTER} \
     --graceful-timeout ${GRACEFUL_TIMEOUT} \

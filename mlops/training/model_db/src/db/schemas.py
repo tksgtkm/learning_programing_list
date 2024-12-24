@@ -39,6 +39,7 @@ class ExperimentBase(BaseModel):
     training_dataset: Optional[str]
     validation_dateset: Optional[str]
     test_dataset: Optional[Dict]
+    evaluations: Optional[Dict]
     artifact_file_paths: Optional[Dict]
 
 class ExperimentCreate(ExperimentBase):
