@@ -62,6 +62,8 @@ def save_onnx(model, filepath: str):
         f.write(onx.SerializeToString())
 
 def main():
+    mlflow.set_tracking_uri('http://localhost:5000')
+    
     parser = ArgumentParser(description="Scikit-learn iris project")
     parser.add_argument(
         "--test_size",
