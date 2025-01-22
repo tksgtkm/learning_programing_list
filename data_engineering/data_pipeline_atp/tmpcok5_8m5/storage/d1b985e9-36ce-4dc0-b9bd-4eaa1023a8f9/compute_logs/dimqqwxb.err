@@ -1,0 +1,5 @@
+[32m2025-01-22 22:57:39 +0900[0m - dagster - [34mDEBUG[0m - atp_job - d1b985e9-36ce-4dc0-b9bd-4eaa1023a8f9 - 391911 - LOGS_CAPTURED - Started capturing logs in process (pid: 391911).
+[32m2025-01-22 22:57:39 +0900[0m - dagster - [34mDEBUG[0m - atp_job - d1b985e9-36ce-4dc0-b9bd-4eaa1023a8f9 - 391911 - atp_matches_dataset - STEP_START - Started execution of step "atp_matches_dataset".
+[32m2025-01-22 22:57:47 +0900[0m - dagster - [34mDEBUG[0m - atp_job - d1b985e9-36ce-4dc0-b9bd-4eaa1023a8f9 - 391911 - atp_matches_dataset - STEP_OUTPUT - Yielded output "result" of type "Nothing". (Type check passed).
+[32m2025-01-22 22:57:47 +0900[0m - dagster - [34mDEBUG[0m - atp_job - d1b985e9-36ce-4dc0-b9bd-4eaa1023a8f9 - 391911 - atp_matches_dataset - ASSET_MATERIALIZATION - Materialized value atp_matches_dataset.
+[32m2025-01-22 22:57:47 +0900[0m - dagster - [34mDEBUG[0m - atp_job - d1b985e9-36ce-4dc0-b9bd-4eaa1023a8f9 - 391911 - atp_matches_dataset - STEP_SUCCESS - Finished execution of step "atp_matches_dataset" in 7.45s.
