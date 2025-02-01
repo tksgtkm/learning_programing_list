@@ -226,3 +226,19 @@ def Pdf(pdf, **options):
     xs, ps = pdf.Render(low=low, high=high, n=n)
     options = _Underride(options, label=pdf.label)
     Plot(xs, ps, **options)
+
+def Pdfs(pdfs, **options):
+    for pdf in pdfs:
+        Pdf(pdf, **options)
+
+def Hist(hist, **options):
+    xs, ys = hist.Render()
+
+    try:
+        xs[0] - xs[0]
+    except TypeError:
+        labels = [str(x) for x in xs]
+        xs = np.arange(len(xs))
+        plt.xticks(xs + 0.5, labels)
+
+    
