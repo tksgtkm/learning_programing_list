@@ -241,4 +241,22 @@ def Hist(hist, **options):
         xs = np.arange(len(xs))
         plt.xticks(xs + 0.5, labels)
 
-    
+    if "width" not in options:
+        try:
+            options["width"] = 0.9 * np.diff(xs).min()
+        except TypeError:
+            warnings.warn(
+                "Hist: Can't compute bar width automatically"
+                "Check for non-numeric types in Hist"
+                "Or try providing width option"
+            )
+
+    options = _Underride(options, label=hist.label)
+    options = _Underride(options, align="center")
+    if options["align"] == "left":
+        options["align"] = "edge"
+    elif options["align"] == "right":
+        options["align"] = "edge"
+        options["width"] *= -1
+
+    Bar(xs, ys, **options)
