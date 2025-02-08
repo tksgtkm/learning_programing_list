@@ -1,4 +1,6 @@
 import re
+import math
+import logging
 
 from collections import Counter
 
@@ -72,8 +74,31 @@ class _DictWrapper:
     def Items(self):
         return self.d.items()
     
+    def SortedItems(self):
+
+        def isnan(x):
+            try:
+                return math.isnan(x)
+            except TypeError:
+                return False
+            
+        if any([isnan(x) for x in self.Values()]):
+            msg = "Keys contain NaN, may not sort correctly"
+            logging.warning(msg)
+
+        try:
+            return sorted(self.d.items())
+        except TypeError:
+            return self.d.items()
+    
+    def Render(self, **options):
+        return zip(*self.SortedItems())
+    
     def Incr(self, x, term=1):
         self.d[x] = self.d.get(x, 0) + term
+
+    def Values(self):
+        return self.d.keys()
         
 class Hist(_DictWrapper):
 
@@ -140,3 +165,14 @@ def ReadStataDct(dct_file, **options):
     dct = FixedWidthVariables(variables, index_base=1)
 
     return dct
+
+def CohenEffectSize(group1, group2):
+    diff = group1.mean() - group2.mean()
+
+    n1, n2 = len(group1), len(group2)
+    var1 = group1.var()
+    var2 = group2.var()
+
+    pooled_var = (n1 * var1 + n2 * var2) / (n1 + n2)
+    d = diff / math.sqrt(pooled_var)
+    return d
