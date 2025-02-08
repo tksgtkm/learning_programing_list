@@ -1,22 +1,58 @@
+import sys
+from operator import itemgetter
+
+import first
 import stats
-import plot
 
-hist = stats.Hist([1, 2, 2, 3, 5])
-print(hist)
+def Mode(hist):
+    p, x = max([(p, x) for x, p in hist.Items()])
+    return x
 
-print(hist.Freq(2))
+def AllModes(hist):
+    return sorted(hist.Items(), key=itemgetter(1), reverse=True)
 
-print(hist[2])
+def WeightDifference(live, firsts, others):
+    mean0 = live.totalwgt_lb.mean()
+    mean1 = firsts.totalwgt_lb.mean()
+    mean2 = others.totalwgt_lb.mean()
 
-print(hist.Freq(4))
+    var1 = firsts.totalwgt_lb.var()
+    var2 = others.totalwgt_lb.var()
 
-print(hist.Values)
+    print('Mean')
+    print('First babies', mean1)
+    print('Others', mean2)
 
-for val in sorted(hist.Values()):
-    print(val, hist.Freq(val))
+    print('Variance')
+    print('First babies', var1)
+    print('Others', var2)
 
-for val, freq in hist.Items():
-    print(val, freq)
+    print('Difference in lbs', mean1 - mean2)
+    print('Difference in oz', (mean1 - mean2) * 16)
 
-plot.Hist(hist)
-plot.Show(xlabel='value', ylabel='frequency')
+    print('Difference relative to mean (%age points)',
+          (mean1 - mean2) / mean0 * 100)
+    
+    d = stats.CohenEffectSize(firsts.totalwgt_lb, others.totalwgt_lb)
+    print('Cohen d', d)
+
+def main(script):
+    live, firsts, others = first.MakeFrames()
+    hist = stats.Hist(live.prglngth)
+
+    WeightDifference(live, firsts, others)
+
+    mode = Mode(hist)
+    print('Mode of preg length', mode)
+    assert(mode == 39)
+
+    modes = AllModes(hist)
+    assert(modes[0][1] == 4693)
+
+    for value, freq in modes[:5]:
+        print(value, freq)
+
+    print('%s: All tests passed.' % script)
+
+if __name__ == '__main__':
+    main(*sys.argv)

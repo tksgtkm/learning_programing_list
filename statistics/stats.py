@@ -99,6 +99,12 @@ class _DictWrapper:
 
     def Values(self):
         return self.d.keys()
+    
+    def Largest(self, n=10):
+        return sorted(self.d.items(), reverse=True)[:n]
+    
+    def Smallest(self, n=10):
+        return sorted(self.d.items(), reverse=False)[:n]
         
 class Hist(_DictWrapper):
 

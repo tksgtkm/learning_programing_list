@@ -306,9 +306,10 @@ def Config(**options):
 
     val = options.get("yticklabels", None)
     if val is not None:
-        ax = plt.gca()
-        labels = ax.get_yticklabels()
-        plt.setp(labels, visible=False)
+        if val == "invisible":
+            ax = plt.gca()
+            labels = ax.get_yticklabels()
+            plt.setp(labels, visible=False)
 
 def Show(**options):
     clf = options.pop("clf", True)
@@ -316,3 +317,45 @@ def Show(**options):
     plt.show()
     if clf:
         Clf()
+
+def Plotly(**options):
+    clf = options.pop("clf", True)
+    Config(**options)
+    import plotly.plotly as plotly
+
+    url = plotly.plot_mpl(plt.gcf())
+    if clf:
+        Clf()
+    return url
+
+def Save(root=None, formats=None, **options):
+    clf = options.pop("clf", True)
+
+    save_options = {}
+    for option in ["bbox_inches", "pad_inches"]:
+        if option in options:
+            save_options[option] = options.pop(option)
+
+    Config(**options)
+
+    if formats is None:
+        formats = ["pdf", "png"]
+
+    try:
+        formats.remove("plotly")
+        Plotly(clf=False)
+    except ValueError:
+        pass
+
+    if root:
+        for fmt in formats:
+            SaveFormat(root, fmt, **save_options)
+
+    if clf:
+        Clf()
+
+def SaveFormat(root, fmt="eps", **options):
+    _Underride(options, dpi=300)
+    filename = "%s.%s" % (root, fmt)
+    print("Writing", filename)
+    plt.savefig(filename, format=fmt, **options)
