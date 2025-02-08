@@ -260,3 +260,59 @@ def Hist(hist, **options):
         options["width"] *= -1
 
     Bar(xs, ys, **options)
+
+LEGEND = True
+LOC = None
+
+def Config(**options):
+    names = [
+        "title",
+        "xlabel",
+        "ylabel",
+        "xscale",
+        "yscale",
+        "xticks",
+        "yticks",
+        "axis",
+        "xlim",
+        "ylim",
+    ]
+
+    for name in names:
+        if name in options:
+            getattr(plt, name)(options[name])
+
+    global LEGEND
+
+    ax = plt.gca()
+    handles, labels = ax.get_legend_handles_labels()
+
+    if LEGEND and len(labels) > 0:
+        global LOC
+        LOC = options.get("loc", LOC)
+        frameon = options.get("frameon", True)
+
+        try:
+            plt.legend(loc=LOC, frameon=frameon)
+        except UserWarning:
+            pass
+    
+    val = options.get("xticklabels", None)
+    if val is not None:
+        if val == "invisible":
+            ax = plt.gca()
+            labels = ax.get_xticklabels()
+            plt.setp(labels, visible=False)
+
+    val = options.get("yticklabels", None)
+    if val is not None:
+        ax = plt.gca()
+        labels = ax.get_yticklabels()
+        plt.setp(labels, visible=False)
+
+def Show(**options):
+    clf = options.pop("clf", True)
+    Config(**options)
+    plt.show()
+    if clf:
+        Clf()

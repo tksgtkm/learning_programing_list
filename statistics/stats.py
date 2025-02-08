@@ -1,5 +1,6 @@
 import re
 import math
+import logging
 
 from collections import Counter
 
@@ -73,8 +74,31 @@ class _DictWrapper:
     def Items(self):
         return self.d.items()
     
+    def SortedItems(self):
+
+        def isnan(x):
+            try:
+                return math.isnan(x)
+            except TypeError:
+                return False
+            
+        if any([isnan(x) for x in self.Values()]):
+            msg = "Keys contain NaN, may not sort correctly"
+            logging.warning(msg)
+
+        try:
+            return sorted(self.d.items())
+        except TypeError:
+            return self.d.items()
+    
+    def Render(self, **options):
+        return zip(*self.SortedItems())
+    
     def Incr(self, x, term=1):
         self.d[x] = self.d.get(x, 0) + term
+
+    def Values(self):
+        return self.d.keys()
         
 class Hist(_DictWrapper):
 
