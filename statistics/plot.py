@@ -261,6 +261,46 @@ def Hist(hist, **options):
 
     Bar(xs, ys, **options)
 
+def Pmf(pmf, **options):
+    xs, ys = pmf.Render()
+
+    width = options.pop("width", None)
+    if width is None:
+        try:
+            width = np.diff(xs).min()
+        except TypeError:
+            warnings.warn(
+                "Pmf: Can7t compute bar width automatically"
+                "Check for non-numeric types in Pmf"
+                "Or try providing width option"
+            )
+    points = []
+
+    lastx = np.nan
+    lasty = 0
+    for x, y in zip(xs, ys):
+        if (x - lastx) > 1e-5:
+            points.append((lastx, 0))
+            points.append((x, 0))
+
+        points.append((x, lasty))
+        points.append((x, y))
+        points.append((x + width, y))
+
+        lastx = x + width
+        lasty = y
+    points.append((lastx, 0))
+    pxs, pys = zip(*points)
+
+    align = options.pop("align", "center")
+    if align == "center":
+        pxs = np.array(pxs) - width / 2.0
+    if align == "right":
+        pxs = np.array(pxs) - width
+
+    options = _Underride(options, label=pmf.label)
+    Plot(pxs, pys, **options)
+
 LEGEND = True
 LOC = None
 
