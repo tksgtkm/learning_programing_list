@@ -179,7 +179,7 @@ def best_first_graph_search(problem, f, display=False):
     return None
 
 def uniform_cost_search(problem, display=False):
-    return best_first_graph_search(problem, lambda node: node.path_code, display)
+    return best_first_graph_search(problem, lambda node: node.path_cost, display)
 
 def depth_limited_search(problem, limit=50):
     def recursive_dls(node, problem, limit):
@@ -529,6 +529,40 @@ class OnlineSearchProblem(Problem):
         if state == self.goal:
             return True
         return False
+    
+class LRTAStarAgent:
+
+    def __init__(self, problem):
+        self.problem = problem
+        self.H = {}
+        self.s = None
+        self.a = None
+
+    def __call__(self, s1):
+        if self.problem.goal_test(s1):
+            self.a = None
+            return self.a
+        else:
+            if s1 not in self.H:
+                self.H[s1] = self.problem.h(s1)
+            if self.s is not None:
+                self.H[self.s] = min(self.LRTA_cost(self.s, b, self.problem.output(self.s, b),
+                                                    self.H) for b in self.problem.actions(self.s))
+                
+            self.a = min(self.problem.actions(s1), key=lambda b: self.LRTA_cost(s1, b, self.problem.output(s1, b), self.H))
+
+            self.s = s1
+            return self.a
+
+    def LRTA_cost(self, s, a, s1, H):
+        print(s, a, s1)
+        if s1 is None:
+            return self.problem.h(s)
+        else:
+            try:
+                return self.problem.c(s, a, s1) + self.H[s1]
+            except:
+                return self.problem.c(s, a, s1) + self.problem.h(s1)
 
 # ______________________________________________________________________________
 # 遺伝的アルゴリズム
@@ -640,6 +674,53 @@ class Graph:
 def UndirectedGraph(graph_dict=None):
     return Graph(graph_dict=graph_dict, directed=False)
 
+def RandomGraph(nodes=list(range(10)), min_links=2, width=400, height=300, curvature=lambda: random.uniform(1.1, 1.5)):
+    g = UndirectedGraph()
+    g.locations = {}
+    for node in nodes:
+        g.locations[node] = (random.randrange(width), random.randrange(height))
+    for i in range(min_links):
+        for node in nodes:
+            if len(g.get(node)) < min_links:
+                here = g.locations[node]
+
+                def distance_to_node(n):
+                    if n is node or g.get(node, n):
+                        return np.inf
+                    return distance(g.locations[n], here)
+                
+                neighbor = min(nodes, key=distance_to_node)
+                d = distance(g.locations[neighbor], here) * curvature()
+                g.connect(node, neighbor, int(d))
+    return g
+
+vacuum_world = Graph(dict(
+    State_1=dict(Suck=['State_7', 'State_5'], Right=['State_2']),
+    State_2=dict(Suck=['State_8', 'State_4'], Left=['State_2']),
+    State_3=dict(Suck=['State_7'], Right=['State_4']),
+    State_4=dict(Suck=['State_4', 'State_2'], Left=['State_3']),
+    State_5=dict(Suck=['State_5', 'State_1'], Right=['State_6']),
+    State_6=dict(Suck=['State_8'], Left=['State_5']),
+    State_7=dict(Suck=['State_7', 'State_3'], Right=['State_8']),
+    State_8=dict(Suck=['State_8', 'State_6'], Left=['State_7'])
+))
+
+one_dim_state_space = Graph(dict(
+    State_1=dict(Right='State_2'),
+    State_2=dict(Right='State_3', Left='State_1'),
+    State_3=dict(Right='State_4', Left='State_2'),
+    State_4=dict(Right='State_5', Left='State_3'),
+    State_5=dict(Right='State_6', Left='State_4'),
+    State_6=dict(Left='State_5')
+))
+one_dim_state_space.least_costs = dict(
+    State_1=8,
+    State_2=9,
+    State_3=2,
+    State_4=2,
+    State_5=4,
+    State_6=3)
+
 class GraphProblem(Problem):
 
     def __init__(self, initial, goal, graph):
@@ -672,6 +753,14 @@ class GraphProblem(Problem):
             return int(distance(locs[node.state], locs[self.goal]))
         else:
             return np.inf
+        
+class GraphProblemStochastic(GraphProblem):
+
+    def result(self, state, action):
+        return self.graph.get(state, action)
+    
+    def path_cost(self):
+        raise NotImplementedError
 
 # ______________________________________________________________________________
 
