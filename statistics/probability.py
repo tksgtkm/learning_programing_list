@@ -7,6 +7,10 @@ import first
 import stats
 import plot
 
+pmf = stats.Pmf([1, 2, 3, 4, 5])
+
+print(pmf)
+
 def MakeHists(live):
     hist = stats.Hist(np.floor(live.agepreg), label='agepreg')
     plot.PrePlot(2, cols=2)
