@@ -31,6 +31,9 @@ class _DictWrapper:
         else:
             self.d.update(Counter(obj))
 
+        if len(self) > 0 and isinstance(self, Pmf):
+            self.Normalize()
+
     def __hash__(self):
         return id(self)
     
@@ -198,6 +201,24 @@ class Hist(_DictWrapper):
             self.Incr(val, -freq)
 
 class Pmf(_DictWrapper):
+    """
+    pmf = stats.Pmf([1, 2, 2, 3, 5])
+    
+    print(pmf)
+
+    print(pmf.Prob(2))
+
+    pmf.Incr(2, 0.2)
+    print(pmf.Prob(2))
+
+    pmf.Mult(2, 0.5)
+    print(pmf.Prob(2))
+
+    print(pmf.Total())
+
+    pmf.Normalize()
+    print(pmf.Total())
+    """
 
     def Prob(self, x, default=0):
         return self.d.get(x, default)
