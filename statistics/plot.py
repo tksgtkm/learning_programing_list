@@ -301,6 +301,10 @@ def Pmf(pmf, **options):
     options = _Underride(options, label=pmf.label)
     Plot(pxs, pys, **options)
 
+def Pmfs(pmfs, **options):
+    for pmf in pmfs:
+        Pmf(pmf, **options)
+
 LEGEND = True
 LOC = None
 

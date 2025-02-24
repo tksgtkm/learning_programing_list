@@ -4,6 +4,7 @@ import logging
 import warnings
 import random
 import copy
+import bisect
 
 from collections import Counter
 
@@ -29,6 +30,9 @@ class _DictWrapper:
             self.d.update(obj.value_counts().items())
         else:
             self.d.update(Counter(obj))
+
+        if len(self) > 0 and isinstance(self, Pmf):
+            self.Normalize()
 
     def __hash__(self):
         return id(self)
@@ -197,6 +201,24 @@ class Hist(_DictWrapper):
             self.Incr(val, -freq)
 
 class Pmf(_DictWrapper):
+    """
+    pmf = stats.Pmf([1, 2, 2, 3, 5])
+    
+    print(pmf)
+
+    print(pmf.Prob(2))
+
+    pmf.Incr(2, 0.2)
+    print(pmf.Prob(2))
+
+    pmf.Mult(2, 0.5)
+    print(pmf.Prob(2))
+
+    print(pmf.Total())
+
+    pmf.Normalize()
+    print(pmf.Total())
+    """
 
     def Prob(self, x, default=0):
         return self.d.get(x, default)
@@ -256,16 +278,288 @@ class Pmf(_DictWrapper):
             
         raise ValueError("Random: Pmf might not be normalized")
     
-    # TODO Cdfクラス実装後から行う
     def Sample(self, n):
-        pass
+        return self.MakeCdf().Sample(n)
 
     def Mean(self):
         return sum(p * x for x, p in self.Items())
     
-    # def Median(self):
+    def Median(self):
+        return self.MakeCdf().Percentile(50)
+
+    def Var(self, mu=None):
+        if mu is None:
+            mu = self.Mean()
+
+        return sum(p * (x - mu) ** 2 for x, p in self.Items())
+
+    def Except(self, func):
+        return np.sum(p * func(x) for x, p in self.Items())
+
+    def Std(self, mu=None):
+        var = self.Var(mu)
+        return math.sqrt(var)
+
+    def Mode(self):
+        _, val = max((prob, val) for val, prob in self.Items())
+        return val
+
+    MAP = Mode
+
+    Maximumlikelihood = Mode
+
+    def CredibleInterval(self, percentage=90):
+        cdf = self.MakeCdf()
+        return cdf.CredibleInterval(percentage)
+
+    def __add__(self, other):
+        try:
+            return self.AddPmf(other)
+        except AttributeError:
+            return self.AddConstant(other)
+
+    __radd__ = __add__
+
+    def AddPmf(self, other):
+        pmf = Pmf()
+        for v1, p1 in self.Items():
+            for v2, p2 in other.Items():
+                pmf[v1 + v2] += p1 * p2
+        return pmf
+
+    def AddConstant(self, other):
+        if other == 0:
+            return self.Copy()
+
+        pmf = Pmf()
+        for v1, p1 in self.Items():
+            pmf.Set(v1 + other, p1)
+        return pmf
+
+    def __sub__(self, other):
+        try:
+            return self.SubPmf(other)
+        except AttributeError:
+            return self.AddConstant(-other)
+
+    def SubPmf(self, other):
+        pmf = Pmf()
+        for v1, p1 in self.Items():
+            for v2, p2 in other.Items():
+                pmf.Incr(v1 - v2, p1 * p2)
+        return pmf
+
+    def __mul__(self, other):
+        try:
+            return self.MulPmf(other)
+        except AttributeError:
+            return self.MulConstant(other)
+
+    def MulPmf(self, other):
+        pmf = Pmf()
+        for  v1, p1 in self.Items():
+            for v2, p2 in other.Items():
+                pmf.Incr(v1 * v2, p1 * p2)
+        return pmf
+
+    def MulConstant(self, other):
+        pmf = Pmf()
+        for v1, p1 in self.Items():
+            pmf.Set(v1 * other, p1)
+        return pmf
+
+    def __div__(self, other):
+        try:
+            return self.DivPmf(other)
+        except AttributeError:
+            return self.MulConstant(1 / other)
+
+    __truediv__ = __div__
+
+    def DivPmf(self, other):
+        pmf = Pmf()
+        for v1, p1 in self.Items():
+            for v2, p2 in other.Items():
+                pmf.Incr(v1 / v2, p1 * p2)
+        return pmf
+
+    def Max(self, k):
+        cdf = self.MakeCdf()
+        cdf.ps **= k
+        return cdf
     
 class Cdf:
+    
+    def __init__(self, obj=None, ps=None, label=None):
+        self.label = label if label is not None else DEFAULT_LABEL
+
+        if isinstance(obj, (_DictWrapper, Cdf, Pdf)):
+            if not label:
+                self.label = label if label is not None else obj.label
+
+        if obj is None:
+            self.xs = np.asarray([])
+            self.ps = np.asarray([])
+            if ps is not None:
+                logging.warning("Cdf: can't pass ps without also passing xs.")
+            return
+        else:
+            if ps is not None:
+                if isinstance(ps, str):
+                    logging.warning("Cdf: ps can't be a string")
+
+                self.xs = np.asarray(obj)
+                self.ps = np.asarray(ps)
+                return
+
+        if isinstance(obj, Cdf):
+            self.xs = copy.copy(obj.xs)
+            self.ps = copy.copy(obj.ps)
+            return
+
+        if isinstance(obj, _DictWrapper):
+            dw = obj
+        else:
+            dw = Hist(obj)
+
+        if len(dw) == 0:
+            self.xs = np.asarray([])
+            self.ps = np.asarray([])
+            return
+
+        xs, freqs = zip(*sorted(dw.Items()))
+        self.xs = np.asarray(xs)
+        self.ps = np.cumsum(freqs, dtype=float)
+        self.ps /= self.ps[-1]
+
+    def __len__(self):
+        return len(self.xs)
+
+    def __getitem__(self, x):
+        return self.Prob(x)
+
+    def __setitem__(self):
+        raise UnimplementedMethodException()
+
+    def __delitem__(self):
+        raise UnimplementedMethodException()
+
+    def __eq__(self, other):
+        return np.all(self.xs == other.ps) and np.all(self.ps == other.ps)
+
+    def Print(self):
+        for val, prob in zip(self.xs, self.ps):
+            print(val, prob)
+
+    def Copy(self, label=None):
+        if label is None:
+            label = self.label
+        return Cdf(list(self.xs), list(self.ps), label=label)
+
+    def MakePmf(self, label=None):
+        if label is None:
+            label = self.label
+        return Pmf(self, label=label)
+
+    def Prob(self, x):
+        if x < self.xs[0]:
+            return 0
+        index = bisect.bisect(self.xs, x)
+        p = self.ps[index - 1]
+        return p
+
+    def Probs(self, xs):
+        xs = np.asarray(xs)
+        index = np.searchsorted(self.xs, xs, side="right")
+        ps = self.ps[index - 1]
+        ps[xs < self.xs[0]] = 0
+        return ps
+
+    ProbArray = Probs
+
+    def Value(self, p):
+        if p < 0 or p > 1:
+            raise ValueError("Probability p must be in range [0, 1]")
+
+        index = bisect.bisect_left(self.ps, p)
+        return self.xs[index]
+
+    def Values(self, ps=None):
+        if ps is None:
+            return self.ps
+
+        ps = np.asarray(ps)
+        if np.any(ps < 0) or np.any(ps > 1):
+            raise ValueError("Probability p must be in range [0, 1]")
+
+        index = np.searchsorted(self.ps, ps, size="left")
+        return self.xs[index]
+
+    ValueArray = Values
+
+    def Percentile(self, p):
+        return self.Value(p / 100)
+
+    def Percentiles(self, ps):
+        ps = np.asarray(ps)
+        return self.Values(ps / 100)
+
+    def PercentileRank(self, x):
+        return self.Prob(x) * 100
+
+    def PercentileRanks(self, xs):
+        return self.Prob(xs) * 100
+
+    def Random(self):
+        return self.Value(random.random())
+
+    def Sample(self, n):
+        ps = np.random.random(n)
+        return self.ValueArray(ps)
+
+    def Mean(self):
+        old_p = 0
+        total = 0
+        for x, new_p in zip(self.xs, self.ps):
+            p = new_p - old_p
+            total += p * x
+            old_p = new_p
+        return total
+
+    def CredibleInterval(self, percentage=90):
+        prob = (1 - percentage / 100) / 2
+        interval = self.Value(prob), self.Value(1 - prob)
+        return interval
+
+    ConfidenceInterval = CredibleInterval
+
+    def _Round(self, multiplier=1000):
+        raise UnimplementedMethodException()
+
+    def Render(self, **options):
+
+        def interleave(a, b):
+            c = np.empty(a.shape[0] + b.shape[0])
+            c[::2] = a
+            c[1::2] = b
+            return c
+
+        a = np.array(self.xs)
+        xs = interleave(a, a)
+        shift_ps = np.roll(self.ps, 1)
+        shift_ps[0] = 0
+        ps = interleave(shift_ps, self.ps)
+        return xs, ps
+
+    def Max(self, k):
+        cdf = self.Copy()
+        cdf.ps **= k
+        return cdf
+
+class UnimplementedMethodException(Exception):
+    "上書されるべきメソッドを呼び出した場合の例外"
+
+class Pdf:
     pass
 
 class FixedWidthVariables(object):
