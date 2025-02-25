@@ -634,6 +634,9 @@ def PmfProbEqual(pmf1, pmf2):
                 total += p1 * p2
     return total
 
+def Mean(xs):
+    return np.mean(xs)
+
 def CohenEffectSize(group1, group2):
     diff = group1.mean() - group2.mean()
 
